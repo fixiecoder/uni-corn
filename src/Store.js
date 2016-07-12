@@ -4,39 +4,42 @@ import updater from './updater';
 
 function makeCall(url, fetchOptions) {
   const that = this;
+  const eventName = fetchOptions.eventName || that.storeId;
+  let response = {};
   fetch(url, fetchOptions)
   .then(res => {
+    response.status = res.status;
+    response.ok = res.ok;
     if(!/application\/json/.test(res.headers.get('content-type'))) {
-      if(res.ok) {
-        updater.update(that.storeId);
-      } else {
-        throw res.text();//new Error(`HTTP Status code ${res.status} there was an error`);
-      }
-    } else if(!res.ok) {
-      throw res.json();
+      return res.text();
     }
     return res.json();
   })
-  .then(json => {
+  .then(resp => {
+    if(!response.ok) {
+      throw resp;
+    }
     if(fetchOptions.propName) {
       that.actions.set(fetchOptions.propName,  json);
     } else {
-      updater.update(that.storeId, json);
+      updater.update(eventName, json);
     }
   })
   .catch(err => {
-    if(err instanceof Promise) {
-     err.then(err => {
-        if(typeof err === 'object' && err.error || err.err) {
-          updater.update(`${that.storeId}-error`, err.error || err.err || err.message);
-        } else {
-          updater.update(`${that.storeId}-error`, err);
-        }
-     })
-    } else {
-      updater.update(`${that.storeId}-error`, 'unknown_error');
-    }
-  })
+    updater.update(fetchOptions.errorEvent, err);
+    // console.warn(err);
+    // if(err instanceof Promise) {
+    //  err.then(err => {
+    //     if(typeof err === 'object' && err.error || err.err) {
+    //       updater.update(`${that.storeId}-error`, err.error || err.err || err.message);
+    //     } else {
+    //       updater.update(`${that.storeId}-error`, err);
+    //     }
+    //  })
+    // } else {
+    //   updater.update(`${that.storeId}-error`, 'unknown_error');
+    // }
+  });
 }
 
 export default class Store {
@@ -45,6 +48,7 @@ export default class Store {
     this.props = defaultProps || {};
     this.storeId = (Date.now() + Math.ceil(Math.random() * 6474)).toString(16);
     this.fetchActions = {};
+    this.forms = {};
     // this.inputHandlers = {};
     this.inputs = {};
     this.actions = {
@@ -60,7 +64,7 @@ export default class Store {
           updater.update(that.storeId, propName);
         }
       }
-    }
+    };
   }
 
   addErrorCallback(callback) {
@@ -92,7 +96,55 @@ export default class Store {
         updater.update(that.storeId, input);
       },
       value: ''
+    };
+  }
+
+  addForm(options) {
+    const that = this;
+    if(!Array.isArray(options.fields)) {
+      window.console.error('addForm requires an array of fields names as it\'s second agument');
     }
+
+    let eventName = that.storeId;
+    if(typeof options.callback === 'function') {
+      eventName = `${that.storeId}-form`;
+      updater.register(eventName, options.callback);
+      updater.register(`${eventName}-error`, options.callback);
+    }
+    const formErrorEventName = `${eventName}-form-error`;
+    if(typeof options.errorCallback === 'function') {
+      updater.register(eventName, options.callback);
+      updater.register(formErrorEventName, options.errorCallback);
+    }
+
+// console.log(formErrorEventName, options.errorCallback)
+    const fetchActionName = `${options.name}-form`;
+
+    that.addFetchAction(fetchActionName, { url: options.url, method: 'post', eventName, errorEvent: formErrorEventName });
+    // const eventName = `${this.storeId}-form-${options.name}`;
+    // updater.register(eventName, callback);
+    this.forms[options.name] = {
+      fields: {},
+      onSubmit: _ => {
+        const body = {};
+        Object.keys(this.forms[options.name].fields).forEach(field => {
+          body[field] = this.forms[options.name].fields[field].value;
+        });
+        that.fetchActions[fetchActionName]({
+          body
+        });
+      }
+    };
+    options.fields.forEach(field => {
+      this.forms[options.name].fields[field] = {
+        value: '',
+        error: null,
+        onChange: ev => {
+          that.forms[options.name].fields[field].value = ev.target.value;
+          updater.update(that.storeId, field);
+        }
+      };
+    });
   }
 
   // addInputHandler(input) {
@@ -108,7 +160,9 @@ export default class Store {
     that.fetchActions[actionName] = (request) => {
       const fetchOptions = {
         method: options.method || 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        eventName: options.eventName || that.storeId,
+        errorEvent: options.errorEvent || `${that.storeId}-error`
       };
       if(request && request.body) {
         fetchOptions.body = JSON.stringify(request.body);
