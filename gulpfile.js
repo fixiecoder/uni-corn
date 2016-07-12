@@ -7,7 +7,7 @@ const buffer = require('vinyl-buffer');
 const uglify = require('gulp-uglify');
 
 gulp.task('javascript', function() {
-  return browserify('./src/Store.js', {standalone: 'Store'})
+  return browserify('./src/Store.js', {standalone: 'Store', debug: true})
     .transform('babelify', {presets: ['es2015']})
     .bundle()
     .pipe(source('./src/Store.js'))
