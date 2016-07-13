@@ -77,7 +77,12 @@ myStore.actions.myAction();
 
 ### Add Fetch Action
 ```
- 
+const myFetchAction = {
+    url,
+    method,
+    body,
+}
+myStore.addFetchAction('myFetchAction', myFetchAction);
 ```
 
 

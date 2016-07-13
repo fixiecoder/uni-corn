@@ -19,26 +19,16 @@ function makeCall(url, fetchOptions) {
     if(!response.ok) {
       throw resp;
     }
+    console.log('AUTH', resp);
     if(fetchOptions.propName) {
-      that.actions.set(fetchOptions.propName,  json);
+      that.actions.set(fetchOptions.propName,  resp);
     } else {
-      updater.update(eventName, json);
+      updater.update(eventName, resp);
     }
   })
   .catch(err => {
     updater.update(fetchOptions.errorEvent, err);
-    // console.warn(err);
-    // if(err instanceof Promise) {
-    //  err.then(err => {
-    //     if(typeof err === 'object' && err.error || err.err) {
-    //       updater.update(`${that.storeId}-error`, err.error || err.err || err.message);
-    //     } else {
-    //       updater.update(`${that.storeId}-error`, err);
-    //     }
-    //  })
-    // } else {
-    //   updater.update(`${that.storeId}-error`, 'unknown_error');
-    // }
+    console.warn(err);
   });
 }
 
@@ -104,7 +94,6 @@ export default class Store {
     if(!Array.isArray(options.fields)) {
       window.console.error('addForm requires an array of fields names as it\'s second agument');
     }
-
     let eventName = that.storeId;
     if(typeof options.callback === 'function') {
       eventName = `${that.storeId}-form`;
@@ -116,13 +105,8 @@ export default class Store {
       updater.register(eventName, options.callback);
       updater.register(formErrorEventName, options.errorCallback);
     }
-
-// console.log(formErrorEventName, options.errorCallback)
     const fetchActionName = `${options.name}-form`;
-
     that.addFetchAction(fetchActionName, { url: options.url, method: 'post', eventName, errorEvent: formErrorEventName });
-    // const eventName = `${this.storeId}-form-${options.name}`;
-    // updater.register(eventName, callback);
     this.forms[options.name] = {
       fields: {},
       onSubmit: _ => {
@@ -141,18 +125,11 @@ export default class Store {
         error: null,
         onChange: ev => {
           that.forms[options.name].fields[field].value = ev.target.value;
-          updater.update(that.storeId, field);
+          updater.update(eventName, field);
         }
       };
     });
   }
-
-  // addInputHandler(input) {
-  //   this.inputHandlers[input] = ev => {
-  //     this.props[input] = ev.target.value;
-  //     updater.update(this.storeId, input);
-  //   }
-  // }
 
   addFetchAction(actionName, options) {
     const that = this;
@@ -162,20 +139,20 @@ export default class Store {
         method: options.method || 'GET',
         headers: { 'Content-Type': 'application/json' },
         eventName: options.eventName || that.storeId,
-        errorEvent: options.errorEvent || `${that.storeId}-error`
+        errorEvent: options.errorEvent || `${that.storeId}-error`,
+        credentials: 'same-origin'
       };
       if(request && request.body) {
         fetchOptions.body = JSON.stringify(request.body);
       }
       function buildUrl(url, urlArgs) {
         if(!urlArgs) return url;
-
         Object.keys(urlArgs).forEach(argKey => {
-          // const regEx = new RegExp(`${argKey}`)
           url = url.replace(argKey, urlArgs[argKey]);
         });
         return url;
       }
+
       const urlArgs = request && request.urlArgs;
       const url = buildUrl(options.url, urlArgs);
       makeCall.call(that, url, fetchOptions);
