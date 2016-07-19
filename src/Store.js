@@ -24,7 +24,7 @@ function makeCall(url, fetchOptions) {
     } else {
       updater.update(eventName, resp);
       if(typeof fetchOptions.onSuccess === 'function') {
-        fetchOptions.onSuccess();
+        fetchOptions.onSuccess(resp);
       }
     }
   })
@@ -34,28 +34,60 @@ function makeCall(url, fetchOptions) {
 }
 
 export default class Store {
-  constructor(defaultProps) {
+  constructor(name, defaultProps) {
+    if(!name) {
+      throw new Error('Store constructor expects name as first argument');
+    }
     const that = this;
+    this.storeName = name;
     this.props = defaultProps || {};
     this.storeId = (Date.now() + Math.ceil(Math.random() * 6474)).toString(16);
     this.fetchActions = {};
     this.forms = {};
-    // this.inputHandlers = {};
     this.inputs = {};
     this.actions = {
       get(propName) {
-        return that.props[propName];
+        let returnProp = that.props[propName];
+        const storageKey = `${that.storeName}-${propName}`;
+
+        if(!returnProp) {
+          try {
+            returnProp = JSON.parse(localStorage.getItem(storageKey));
+          } catch (e) {
+            returnProp = localStorage.getItem(storageKey);
+          }
+        }
+
+        if(!returnProp) {
+          try {
+            returnProp = JSON.parse(sessionStorage.getItem(storageKey));
+          } catch (e) {
+            returnProp = localStorage.getItem(storageKey);
+          }
+        }
+
+        return returnProp;
       },
       getAll() {
         return that.props;
       },
-      set(propName, value, autoUpdate = true) {
+      set(propName, value, autoUpdate = true, persist) {
         that.props[propName] = value;
+        const storageKey = `${that.storeName}-${propName}`;
+        if(persist === true) {
+          localStorage.setItem(storageKey, value);
+        } else if(persist === 'session') {
+          localStorage.removeItem(storageKey);
+          sessionStorage.setItem(storageKey, value);
+        }
         if(autoUpdate === true) {
           updater.update(that.storeId, propName);
         }
       }
     };
+    this.get = this.actions.get;
+    this.set = this.actions.set;
+    this.getAll = this.actions.getAll;
   }
 
   addErrorCallback(callback) {
@@ -108,25 +140,8 @@ export default class Store {
       window.console.error('addForm requires an array of fields names as it\'s second agument');
     }
     let eventName = that.storeId;
-    if(typeof options.onUpdate === 'function') {
-      eventName = `${that.storeId}-form`;
-      updater.register(eventName, options.onUpdate);
-      updater.register(`${eventName}-error`, options.onUpdate);
-    }
-    const formErrorEventName = `${eventName}-form-error`;
-    if(typeof options.errorCallback === 'function') {
-      updater.register(eventName, options.onUpdate);
-      updater.register(formErrorEventName, options.errorCallback);
-    }
+    
 
-    const onSuccess = function(name) {
-      updater.unregister(eventName)
-      this.forms[name] = {};
-      options.onSuccess();
-    }.bind(this, options.name);
-
-    const fetchActionName = `${options.name}-form`;
-    that.addFetchAction(fetchActionName, { url: options.url, method: 'post', eventName, errorEvent: formErrorEventName, onSuccess: onSuccess });
     this.forms[options.name] = {
       getForm() {
         return {
@@ -159,23 +174,45 @@ export default class Store {
     };
     options.fields.forEach(field => {
       this.forms[options.name].fields[field.name] = {
-        value: '',
+        value: typeof field.default === 'undefined' ? null : field.default,
         required: field.required || false,
         error: null,
         onChange: ev => {
-          that.forms[options.name].fields[field.name].value = ev.target.value;
+          let value = ev.target.value;
+          if(ev.target.type === 'checkbox') {
+            value = ev.target.checked;
+          }
+          that.forms[options.name].fields[field.name].value = value;
           updater.update(eventName, field);
         }
       };
     });
-  }
 
-  // addInputHandler(input) {
-  //   this.inputHandlers[input] = ev => {
-  //     this.props[input] = ev.target.value;
-  //     updater.update(this.storeId, input);
-  //   }
-  // }
+    if(typeof options.onUpdate === 'function') {
+      eventName = `${that.storeId}-form`;
+      updater.register(eventName, options.onUpdate);
+      updater.register(`${eventName}-error`, options.onUpdate);
+    }
+    const formErrorEventName = `${eventName}-form-error`;
+    if(typeof options.errorCallback === 'function') {
+      updater.register(eventName, options.onUpdate);
+      updater.register(formErrorEventName, options.errorCallback);
+    }
+
+    const onSuccess = function(name, val) {
+      updater.unregister(eventName)
+      options.onSuccess(val);
+      this.forms[name] = {};
+    }.bind(this, options.name);
+
+    const fetchActionName = `${options.name}-form`;
+    that.addFetchAction(fetchActionName, { 
+      url: options.url, 
+      method: 'post', eventName, 
+      errorEvent: formErrorEventName, 
+      onSuccess: onSuccess 
+    });
+  }
 
   addFetchAction(actionName, options) {
     const that = this;

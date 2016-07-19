@@ -9,7 +9,6 @@ const updater = (() => {
   };
 
   const unregister = eventName => {
-    // const indexOfCallback = callbacks.indexOf(eventName);
     delete callbacks[eventName];
   }
 
@@ -53,5 +52,3 @@ const updater = (() => {
     update: update
   }
 })();
-
-export default updater;
