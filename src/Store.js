@@ -19,16 +19,17 @@ function makeCall(url, fetchOptions) {
     if(!response.ok) {
       throw resp;
     }
-    console.log('AUTH', resp);
     if(fetchOptions.propName) {
       that.actions.set(fetchOptions.propName,  resp);
     } else {
       updater.update(eventName, resp);
+      if(typeof fetchOptions.onSuccess === 'function') {
+        fetchOptions.onSuccess();
+      }
     }
   })
   .catch(err => {
     updater.update(fetchOptions.errorEvent, err);
-    console.warn(err);
   });
 }
 
@@ -89,47 +90,92 @@ export default class Store {
     };
   }
 
+  getInitalFormState(fieldNames) {
+    const fields = {};
+    fieldNames.forEach(fieldName => {
+      fields[fieldName] = {
+        value: '',
+        error: null,
+        onChange: _ => {}
+      }
+    });
+    return { fields, onSubmit: _ => {} };
+  }
+
   addForm(options) {
     const that = this;
     if(!Array.isArray(options.fields)) {
       window.console.error('addForm requires an array of fields names as it\'s second agument');
     }
     let eventName = that.storeId;
-    if(typeof options.callback === 'function') {
+    if(typeof options.onUpdate === 'function') {
       eventName = `${that.storeId}-form`;
-      updater.register(eventName, options.callback);
-      updater.register(`${eventName}-error`, options.callback);
+      updater.register(eventName, options.onUpdate);
+      updater.register(`${eventName}-error`, options.onUpdate);
     }
     const formErrorEventName = `${eventName}-form-error`;
     if(typeof options.errorCallback === 'function') {
-      updater.register(eventName, options.callback);
+      updater.register(eventName, options.onUpdate);
       updater.register(formErrorEventName, options.errorCallback);
     }
+
+    const onSuccess = function(name) {
+      updater.unregister(eventName)
+      this.forms[name] = {};
+      options.onSuccess();
+    }.bind(this, options.name);
+
     const fetchActionName = `${options.name}-form`;
-    that.addFetchAction(fetchActionName, { url: options.url, method: 'post', eventName, errorEvent: formErrorEventName });
+    that.addFetchAction(fetchActionName, { url: options.url, method: 'post', eventName, errorEvent: formErrorEventName, onSuccess: onSuccess });
     this.forms[options.name] = {
+      getForm() {
+        return {
+          fields: this.fields,
+          onSubmit: this.onSubmit
+        };
+      },
       fields: {},
-      onSubmit: _ => {
+      onSubmit: ev => {
+        ev.preventDefault();
         const body = {};
+        let error = false;
         Object.keys(this.forms[options.name].fields).forEach(field => {
-          body[field] = this.forms[options.name].fields[field].value;
+          const fields = this.forms[options.name].fields;
+          if(fields[field].required && !fields[field].value) {
+            this.forms[options.name].fields[field].error = `The ${field} field is required`;
+            error = true;
+          } else {
+            this.forms[options.name].fields[field].error = null;
+          }
+          body[field] = fields[field].value;
         });
+        if(error === true) {
+          return updater.update(eventName, options.name);
+        }
         that.fetchActions[fetchActionName]({
           body
         });
       }
     };
     options.fields.forEach(field => {
-      this.forms[options.name].fields[field] = {
+      this.forms[options.name].fields[field.name] = {
         value: '',
+        required: field.required || false,
         error: null,
         onChange: ev => {
-          that.forms[options.name].fields[field].value = ev.target.value;
+          that.forms[options.name].fields[field.name].value = ev.target.value;
           updater.update(eventName, field);
         }
       };
     });
   }
+
+  // addInputHandler(input) {
+  //   this.inputHandlers[input] = ev => {
+  //     this.props[input] = ev.target.value;
+  //     updater.update(this.storeId, input);
+  //   }
+  // }
 
   addFetchAction(actionName, options) {
     const that = this;
@@ -140,7 +186,8 @@ export default class Store {
         headers: { 'Content-Type': 'application/json' },
         eventName: options.eventName || that.storeId,
         errorEvent: options.errorEvent || `${that.storeId}-error`,
-        credentials: 'same-origin'
+        credentials: 'same-origin',
+        onSuccess: options.onSuccess
       };
       if(request && request.body) {
         fetchOptions.body = JSON.stringify(request.body);

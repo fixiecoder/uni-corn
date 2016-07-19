@@ -8,6 +8,11 @@ const updater = (() => {
     default: []
   };
 
+  const unregister = eventName => {
+    // const indexOfCallback = callbacks.indexOf(eventName);
+    delete callbacks[eventName];
+  }
+
   const register = (event, callback) => {
     let eventName = 'default';
     if (typeof event === 'function') {
@@ -44,6 +49,7 @@ const updater = (() => {
 
   return {
     register: register,
+    unregister: unregister,
     update: update
   }
 })();
