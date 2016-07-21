@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-import async from 'async';
 
 const updater = (() => {
   const emitter = new EventEmitter();
@@ -20,18 +19,23 @@ const updater = (() => {
       eventName = event;
     }
     if (typeof callbacks[eventName] === 'undefined') {
-      callbacks[eventName] = [];
+      callbacks[eventName] = new Set();
     }
-    callbacks[eventName].push(callback);
-    emitter.on(eventName, (prop) => {
-      async.each(callbacks[eventName], (callback) => {
-        callback(prop);
-      });
-    })
+    callbacks[eventName].add(callback);
+
+    callbacks[eventName].forEach(callback => {
+      emitter.on(eventName, callback);
+    });
+
   };
 
+  const unsubscribe = (eventName, callback) => {
+    callbacks[eventName].delete(callback);
+    emitter.removeListener(eventName, callback);
+  }
+
   const onEvent = () => {
-    async.each(callbacks.default, (callback) => {
+    callbacks.default.forEach(callback => {
       callback();
     });
   };  
@@ -42,13 +46,15 @@ const updater = (() => {
     if (!event) {
       event = 'update';
     }
-
     emitter.emit(event, prop);
   };
 
   return {
-    register: register,
-    unregister: unregister,
-    update: update
+    register,
+    unregister,
+    unsubscribe,
+    update
   }
 })();
+
+export default updater;

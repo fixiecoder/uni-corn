@@ -98,10 +98,18 @@ export default class Store {
     updater.register(this.storeId, callback);
   }
 
+  subscribe(callback) {
+    updater.register(this.storeId, callback);
+  }
+
+  unsubscribe(callback) {
+    updater.unsubscribe(this.storeId, callback);
+  }
+
   addAction(actionName, action, autoUpate = true) {
     const that = this;
     if(typeof action !== 'function') {
-      return console.error('Store addAction invalid argument type - Actions must be functions');
+      return console.error('Store addAction expects a function as the second argument');
     }
     this.actions[actionName] = (...args) => {
       action.apply(that, args);
