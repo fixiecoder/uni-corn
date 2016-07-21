@@ -71,9 +71,9 @@ export default class Store {
       getAll() {
         return that.props;
       },
-      set(propName, value, autoUpdate = true, persist) {
-        that.props[propName] = value;
-        const storageKey = `${that.storeName}-${propName}`;
+      set(key, value, autoUpdate = true, persist) {
+        that.props[key] = value;
+        const storageKey = `${that.storeName}-${key}`;
         if(persist === true) {
           localStorage.setItem(storageKey, value);
         } else if(persist === 'session') {
@@ -81,7 +81,7 @@ export default class Store {
           sessionStorage.setItem(storageKey, value);
         }
         if(autoUpdate === true) {
-          updater.update(that.storeId, propName);
+          updater.update(that.storeId, key);
         }
       }
     };
@@ -91,6 +91,10 @@ export default class Store {
   }
 
   addErrorCallback(callback) {
+    updater.register(`${this.storeId}-error`, callback);
+  }
+
+  onError(callback) {
     updater.register(`${this.storeId}-error`, callback);
   }
 
