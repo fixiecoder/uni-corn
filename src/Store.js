@@ -1,5 +1,3 @@
-'use strict';
-
 import updater from './updater';
 
 function makeCall(url, fetchOptions) {
@@ -50,7 +48,7 @@ export default class Store {
         let returnProp = that.props[propName];
         const storageKey = `${that.storeName}-${propName}`;
 
-        if(!returnProp) {
+        if(typeof returnProp === 'undefined') {
           try {
             returnProp = JSON.parse(localStorage.getItem(storageKey));
           } catch (e) {
@@ -58,7 +56,7 @@ export default class Store {
           }
         }
 
-        if(!returnProp) {
+        if(typeof returnProp === 'undefined') {
           try {
             returnProp = JSON.parse(sessionStorage.getItem(storageKey));
           } catch (e) {

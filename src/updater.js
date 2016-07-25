@@ -18,19 +18,20 @@ const updater = (() => {
     } else if (typeof event === 'string') {
       eventName = event;
     }
-    if (typeof callbacks[eventName] === 'undefined') {
-      callbacks[eventName] = new Set();
-    }
-    callbacks[eventName].add(callback);
+    // if (typeof callbacks[eventName] === 'undefined') {
+    //   callbacks[eventName] = new Set();
+    // }
+    // callbacks[eventName].add(callback);
 
-    callbacks[eventName].forEach(callback => {
+    // callbacks[eventName].forEach(callback => {
       emitter.on(eventName, callback);
-    });
+    // });
 
   };
 
   const unsubscribe = (eventName, callback) => {
-    callbacks[eventName].delete(callback);
+    // callbacks[eventName].delete(callback);
+    // console.log('removing callback from', eventName)
     emitter.removeListener(eventName, callback);
   }
 

@@ -12,7 +12,7 @@ gulp.task('browser-bundle', function() {
     .transform('babelify', {presets: ['es2015']})
     .bundle()
     .pipe(source('uni-corn-browser.js'))
-    // .pipe(buffer())
+    .pipe(buffer())
     .pipe(gulp.dest('./dist'));
 });
 
@@ -28,11 +28,13 @@ gulp.task('browser-bundle-min', function() {
 });
 
 gulp.task('module-bundle', function() {
-  return browserify('./src/Store.js', {standalone: 'Store', debug: true})
+  return browserify(['./src/Store.js'], {standalone: 'Store', debug: true})
     .transform('babelify', {presets: ['es2015']})
+    .require("./src/updater")
     .bundle()
     .pipe(source('uni-corn.js'))
-    // .pipe(buffer())
+    .pipe(buffer())
+    // .pipe(uglify())
     .pipe(gulp.dest('./dist'));
 });
 
@@ -48,8 +50,8 @@ gulp.task('module-bundle-min', function() {
 
 
 gulp.task('default', [
-  'browser-bundle', 
+  // 'browser-bundle', 
   'browser-bundle-min',
-  'module-bundle', 
+  // 'module-bundle', 
   'module-bundle-min'
 ]);
