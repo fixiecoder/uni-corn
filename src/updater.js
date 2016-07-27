@@ -1,5 +1,4 @@
-import { EventEmitter } from 'events';
-
+EventEmitter = require('events').EventEmitter;
 const updater = (() => {
   const emitter = new EventEmitter();
 
@@ -58,4 +57,4 @@ const updater = (() => {
   }
 })();
 
-export default updater;
+module.exports = updater;

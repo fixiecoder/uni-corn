@@ -1,4 +1,4 @@
-var updater = require('./updater');
+updater = require('./updater');
 
 function makeCall(url, fetchOptions) {
   const that = this;
@@ -31,7 +31,7 @@ function makeCall(url, fetchOptions) {
   });
 }
 
-export default class Store {
+module.exports = class Store {
   constructor(name, defaultProps) {
     if(!name) {
       throw new Error('Store constructor expects name as first argument');
