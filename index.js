@@ -289,7 +289,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      });
 	      submitAction = that.fetchActions[fetchActionName];
 	    } else if(options.action) {
-	      submitAction = options.action;
+	      submitAction = this.actions[options.action];
 	    }
 	  }
 
