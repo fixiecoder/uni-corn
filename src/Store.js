@@ -155,6 +155,9 @@ module.exports = class Store {
     }
     let eventName = that.storeId;
     
+    let submitAction = () => {
+      console.log('no action or fetch specified.')
+    };
 
     this.forms[options.name] = {
       getForm() {
@@ -181,11 +184,12 @@ module.exports = class Store {
         if(error === true) {
           return updater.update(eventName, options.name);
         }
-        that.fetchActions[fetchActionName]({
+        submitAction({
           body
         });
       }
     };
+
     options.fields.forEach(field => {
       this.forms[options.name].fields[field.name] = {
         value: typeof field.default === 'undefined' ? null : field.default,
@@ -213,19 +217,24 @@ module.exports = class Store {
       updater.register(formErrorEventName, options.errorCallback);
     }
 
-    const onSuccess = function(name, val) {
-      updater.unregister(eventName)
-      options.onSuccess(val);
-      this.forms[name] = {};
-    }.bind(this, options.name);
+    if(options.url) {
+      const onSuccess = function(name, val) {
+        updater.unregister(eventName)
+        options.onSuccess(val);
+        this.forms[name] = {};
+      }.bind(this, options.name);
 
-    const fetchActionName = `${options.name}-form`;
-    that.addFetchAction(fetchActionName, { 
-      url: options.url, 
-      method: 'post', eventName, 
-      errorEvent: formErrorEventName, 
-      onSuccess: onSuccess 
-    });
+      const fetchActionName = `${options.name}-form`;
+      that.addFetchAction(fetchActionName, { 
+        url: options.url, 
+        method: 'post', eventName, 
+        errorEvent: formErrorEventName, 
+        onSuccess: onSuccess 
+      });
+      submitAction = that.fetchActions[fetchActionName];
+    } else if(options.action) {
+      submitAction = options.action;
+    }
   }
 
   addFetchAction(actionName, options) {
