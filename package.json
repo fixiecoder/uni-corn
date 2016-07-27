@@ -1,6 +1,6 @@
 {
   "name": "uni-corn",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Uni directional data flow library that keeps everything really simple! ",
   "main": "index.js",
   "scripts": {
