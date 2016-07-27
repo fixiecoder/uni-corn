@@ -53,5 +53,5 @@ gulp.task('default', [
   // 'browser-bundle', 
   'browser-bundle-min',
   // 'module-bundle', 
-  'module-bundle-min'
+  // 'module-bundle-min'
 ]);
