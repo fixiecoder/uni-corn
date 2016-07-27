@@ -1,4 +1,4 @@
-import updater from './updater';
+var updater = require('./updater');
 
 function makeCall(url, fetchOptions) {
   const that = this;
