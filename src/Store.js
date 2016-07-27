@@ -108,7 +108,11 @@ export default class Store {
     updater.unsubscribe(this.storeId, callback);
   }
 
-  addAction(actionName, action, autoUpate = true) {
+  forceUpdate() {
+    updater.update(this.storeId);
+  }
+
+  addAction(actionName, action, autoUpate = false) {
     const that = this;
     if(typeof action !== 'function') {
       return console.error('Store addAction expects a function as the second argument');
