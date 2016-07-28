@@ -1,4 +1,7 @@
 # uni-corn
+
+**This project is still very much a work in progress**
+
 Uni directional data flow library that keeps everything really simple!
 
 Create stores to seperate data from differnt parts off the application

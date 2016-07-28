@@ -108,8 +108,8 @@ module.exports = class Store {
     updater.unsubscribe(this.storeId, callback);
   }
 
-  forceUpdate() {
-    updater.update(this.storeId);
+  forceUpdate(status) {
+    updater.update(this.storeId, status);
   }
 
   addAction(actionName, action, autoUpate = false) {
