@@ -96,6 +96,10 @@ module.exports = class Store {
     updater.register(`${this.storeId}-error`, callback);
   }
 
+  removeOnError(callback) {
+    updater.unsubscribe(`${this.storeId}-error`, callback);
+  }
+
   addCallback(callback) {
     updater.register(this.storeId, callback);
   }
@@ -108,8 +112,12 @@ module.exports = class Store {
     updater.unsubscribe(this.storeId, callback);
   }
 
-  forceUpdate() {
-    updater.update(this.storeId);
+  forceUpdate(status) {
+    updater.update(this.storeId, status);
+  }
+
+  forceError(err) {
+    updater.update(`${this.storeId}-error`, err);
   }
 
   addAction(actionName, action, autoUpate = false) {
@@ -149,6 +157,9 @@ module.exports = class Store {
   }
 
   addForm(options) {
+    if(!options.url && !options.action) {
+      return console.error('Store.addForm() requires either a url or action option to be set');
+    }
     const that = this;
     if(!Array.isArray(options.fields)) {
       window.console.error('addForm requires an array of fields names as it\'s second agument');
@@ -156,7 +167,7 @@ module.exports = class Store {
     let eventName = that.storeId;
     
     let submitAction = () => {
-      console.warn('no action or fetch specified.')
+      console.log('no action or url specified. Doing nothing!');
     };
 
     this.forms[options.name] = {
