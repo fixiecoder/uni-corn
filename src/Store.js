@@ -156,7 +156,7 @@ module.exports = class Store {
     let eventName = that.storeId;
     
     let submitAction = () => {
-      console.log('no action or fetch specified.')
+      console.warn('no action or fetch specified.')
     };
 
     this.forms[options.name] = {
@@ -192,7 +192,7 @@ module.exports = class Store {
 
     options.fields.forEach(field => {
       this.forms[options.name].fields[field.name] = {
-        value: typeof field.default === 'undefined' ? null : field.default,
+        value: typeof field.default === 'undefined' ? '' : field.default,
         required: field.required || false,
         error: null,
         onChange: ev => {

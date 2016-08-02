@@ -212,7 +212,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    let eventName = that.storeId;
 	    
 	    let submitAction = () => {
-	      console.log('no action or fetch specified.')
+	      console.warn('no action or fetch specified.')
 	    };
 
 	    this.forms[options.name] = {
@@ -248,7 +248,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    options.fields.forEach(field => {
 	      this.forms[options.name].fields[field.name] = {
-	        value: typeof field.default === 'undefined' ? null : field.default,
+	        value: typeof field.default === 'undefined' ? '' : field.default,
 	        required: field.required || false,
 	        error: null,
 	        onChange: ev => {
